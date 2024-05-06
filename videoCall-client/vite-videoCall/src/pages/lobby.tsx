@@ -1,13 +1,28 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSocket } from "../context/SocketProvider";
 
 const LobbyPage = () => {
   const [email, setEmail] = useState("");
   const [roomId, setRoomId] = useState("");
 
+  const socket = useSocket();
+
   const handleFormSubmit = useCallback((e: any) => {
     e.preventDefault();
-    console.log(email, roomId);
-  }, [email, roomId]);
+    socket.emit("join", { email, roomId });
+  }, [email, roomId, socket]);
+
+  const handleRoomJoin = useCallback((data: { email: any; roomId: any; }) => {
+    const { email, roomId } = data;
+    console.log(`joined room with ${email} in ${roomId}`);
+  }, [])
+
+  useEffect(() => {
+    socket.on("join", handleRoomJoin);
+    return (() => {
+      socket.off("join", handleRoomJoin)
+    })
+  }, [socket, handleRoomJoin])
 
   return (
     <div className="lobby-page md:w-1/6 md:flex md:justify-center md:flex-col mx-auto">
