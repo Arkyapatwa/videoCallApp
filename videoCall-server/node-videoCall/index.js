@@ -15,6 +15,8 @@ io.on("connection", socket => {
         const { email, roomId } = data
         socketidToEmailIdmap.set(socket.id, email)
         EmailIdToSocketIdMap.set(email, socket.id)
+        io.to(roomId).emit("user:joined", {email, id: socket.id})
+        socket.join(roomId)
         io.to(socket.id).emit("join", data)
     })
 })
