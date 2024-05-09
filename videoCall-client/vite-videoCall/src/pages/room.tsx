@@ -9,13 +9,13 @@ const Room = () => {
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [myStream, setMyStream] = useState<any>(null);
 
-  const handleJoin = useCallback(({ email, id } : { email: any; id: any; }) => {
+  const handleJoin = useCallback(({ email, id }: { email: any; id: any }) => {
     console.log(`User ${email} joined room ${id}`);
     setRemoteSocketId(id);
   }, []);
 
   // video calling function
-  const handleCall = useCallback( async () => {  
+  const handleCall = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
@@ -28,20 +28,38 @@ const Room = () => {
   }, [remoteSocketId, socket]);
 
   // video call incomming function
-  const handleIncommingCall = useCallback(({from, offer} : {from: any; offer: any;}) => { 
-      console.log(`Incomming call from ${from} ${offer}`);
-  }, [])
+  const handleIncommingCall = useCallback(
+    async ({ from, offer }: { from: any; offer: any }) => {
+      setRemoteSocketId(from);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
+      setMyStream(stream);
+      console.log(`Incomming call from ${from} ${offer}`);
+      const answer = await peer.getAnswer(offer);
+      socket.emit("call:accepted", { to: from, answer });
+    },
+    [socket]
+  );
+
+  const handleAcceptedCall = useCallback(({ from, answer }: { from: any, answer: any }) => {
+      peer.setLocalDescription(answer);
+      console.log(`Call accepted from ${from} ${answer}`)
+  }, [socket])
 
   useEffect(() => {
     socket.on("user:joined", handleJoin);
     socket.on("incomming:call", handleIncommingCall);
+    socket.on("call:accepted", handleAcceptedCall)
 
     return () => {
       socket.off("user:joined", handleJoin);
       socket.off("incomming:call", handleIncommingCall);
+      socket.off("call:accepted", handleAcceptedCall)
     };
-  }, [socket, handleJoin, handleIncommingCall]);
+  }, [socket, handleJoin, handleIncommingCall, handleAcceptedCall]);
 
   return (
     <>
@@ -50,7 +68,13 @@ const Room = () => {
       {remoteSocketId && <button onClick={handleCall}>CALL</button>}
       {myStream && (
         <>
-          <ReactPlayer playing muted height="100px" width="200px" url={myStream} />
+          <ReactPlayer
+            playing
+            muted
+            height="100px"
+            width="200px"
+            url={myStream}
+          />
         </>
       )}
     </>
