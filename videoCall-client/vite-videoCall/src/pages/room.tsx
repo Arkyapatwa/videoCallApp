@@ -44,20 +44,33 @@ const Room = () => {
     [socket]
   );
 
-  const handleAcceptedCall = useCallback(({ from, answer }: { from: any, answer: any }) => {
+  //   add track to peer
+  const sendStream = useCallback(() => {
+    for (const track of myStream.getTracks()) {
+      if (peer.peer) {
+        peer.peer.addTrack(track, myStream);
+      }
+    }
+  }, [myStream]);
+
+  const handleAcceptedCall = useCallback(
+    ({ from, answer }: { from: any; answer: any }) => {
       peer.setLocalDescription(answer);
-      console.log(`Call accepted from ${from} ${answer}`)
-  }, [socket])
+      console.log(`Call accepted from ${from} ${answer}`);
+      sendStream();
+    },
+    [socket]
+  );
 
   useEffect(() => {
     socket.on("user:joined", handleJoin);
     socket.on("incomming:call", handleIncommingCall);
-    socket.on("call:accepted", handleAcceptedCall)
+    socket.on("call:accepted", handleAcceptedCall);
 
     return () => {
       socket.off("user:joined", handleJoin);
       socket.off("incomming:call", handleIncommingCall);
-      socket.off("call:accepted", handleAcceptedCall)
+      socket.off("call:accepted", handleAcceptedCall);
     };
   }, [socket, handleJoin, handleIncommingCall, handleAcceptedCall]);
 
