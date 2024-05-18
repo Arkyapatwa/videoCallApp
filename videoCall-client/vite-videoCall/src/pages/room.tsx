@@ -7,7 +7,12 @@ const Room = () => {
   const socket = useSocket();
 
   const [remoteSocketId, setRemoteSocketId] = useState(null);
+
   const [myStream, setMyStream] = useState<MediaStream | undefined>();
+  const [myScreenStream, setMyScreenStream] = useState<
+    MediaStream | undefined
+  >();
+
   const [remoteStream, setRemoteStream] = useState<MediaStream | undefined>();
 
   const handleJoin = useCallback(({ email, id }: { email: any; id: any }) => {
@@ -54,6 +59,26 @@ const Room = () => {
       peer.peer.addTrack(track, myStream);
     }
   }, [myStream]);
+
+  const getScreenStream = useCallback(async () => {
+    const myLocalScreenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+    });
+
+    setMyScreenStream(myLocalScreenStream);
+
+  }, []);
+
+  const sendScreenStream = useCallback(() => {
+    if (!myScreenStream) return;
+    
+    for (const track of myScreenStream.getVideoTracks()) {
+        if (!peer.peer) return;
+        peer.peer.addTrack(track, myScreenStream);
+    }
+    console.log(`screen shared! ${myScreenStream}`)
+
+  }, [myScreenStream]);
 
   const handleAcceptedCall = useCallback(
     ({ from, answer }: { from: any; answer: any }) => {
@@ -131,7 +156,9 @@ const Room = () => {
     <>
       <h1>Room</h1>
       <h4>{remoteSocketId ? "Connected" : "No one in room"}</h4>
-      {myStream && <button onClick={sendStream}>Send Stream</button>}
+      {myStream && <button onClick={sendStream}>Send Stream</button>}<br />
+      <button onClick={getScreenStream}>Share My Screen</button><br />
+      {/* {myScreenStream && <button onClick={getScreenStream}>Send Screen Stream</button>} */}
       {remoteSocketId && <button onClick={handleCall}>CALL</button>}
       {myStream && (
         <>
@@ -154,6 +181,18 @@ const Room = () => {
             height="100px"
             width="200px"
             url={remoteStream}
+          />
+        </>
+      )}
+      {myScreenStream && (
+        <>
+          <h1>My Screen Stream</h1>
+          <ReactPlayer
+            playing
+            muted
+            height="100px"
+            width="200px"
+            url={myScreenStream}
           />
         </>
       )}
